@@ -4,10 +4,10 @@ import logging
 import os
 import time
 import urllib.parse
+from typing import Generator
 
 import bs4
 import click
-import numpy as np
 import pandas as pd
 from selenium import webdriver
 from selenium.webdriver.remote.webdriver import WebDriver
@@ -26,7 +26,7 @@ DEFAULT_CHROMEDRIVER_PATH = "./bin/chromedriver-linux64/chromedriver"
 
 
 @contextlib.contextmanager
-def _create_chrome_driver(browser_location: str, driver_location: str) -> webdriver.Chrome:
+def _create_chrome_driver(browser_location: str, driver_location: str) -> Generator[webdriver.Chrome, None, None]:
     options = webdriver.ChromeOptions()
     options.binary_location = browser_location
     options.add_argument("--no-sandbox")
@@ -42,19 +42,22 @@ def fetch_website_with_js_loaded(driver: WebDriver, url: str) -> bs4.BeautifulSo
     return bs4.BeautifulSoup(driver.page_source, "html.parser")
 
 
-def parse_match(match: bs4.BeautifulSoup) -> tuple[np.datetime64, str, str, str]:
+def parse_match(match: bs4.BeautifulSoup) -> tuple[pd.Timestamp | None, str, str, str]:
     # If penalties, remove suffix
-    datetime = match.find(class_="event__time").text.lower().removesuffix("pen").split()
-    # Check if date-only
-    if len(datetime) == 1:
-        datetime = pd.to_datetime(datetime[0], dayfirst=True)
-    else:
-        date, time = datetime
-        date = date.split('.')
-        # Check if year is present
-        if not date[2]:
-            date[2] = str(dt.date.today().year)
-        datetime = pd.to_datetime('.'.join(date) + ' ' + time, dayfirst=True)
+    datetime = match.find(class_="event__time")
+    # Check if match just recently finished (time unavailable)
+    if datetime is not None:
+        datetime = datetime.text.lower().removesuffix("pen").split()
+        # Check if date-only
+        if len(datetime) == 1:
+            datetime = pd.to_datetime(datetime[0], dayfirst=True)
+        else:
+            date, time = datetime
+            date = date.split('.')
+            # Check if year is present
+            if not date[2]:
+                date[2] = str(dt.date.today().year)
+            datetime = pd.to_datetime('.'.join(date) + ' ' + time, dayfirst=True)
 
     home_participant = match.find(class_="event__homeParticipant")
     home_participant = (home_participant.find("strong") or home_participant.find("span")).text.lower().strip()

@@ -67,4 +67,5 @@ async def fetch_matches_details() -> None:
 
 
 if __name__ == "__main__":
+    # fetch_matches()
     asyncio.run(fetch_matches_details())
