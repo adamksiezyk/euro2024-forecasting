@@ -30,10 +30,10 @@ ASSISTANT_PATTERN = re.compile(r"\(([\w\.\s]+)\)")
 def parse_teams(soup: bs4.BeautifulSoup) -> tuple[str, str]:
     teams = [t.strip().lower() for t in soup.find("h3").text.split('-')]
     assert len(teams) == 2
-    return tuple(teams)
+    return teams[0], teams[1]
 
 
-def parse_summary(teams: tuple[str, str], summary: bs4.BeautifulSoup) -> tuple[dict[str, Any]]:
+def parse_summary(teams: tuple[str, str], summary: bs4.BeautifulSoup) -> tuple[dict[str, Any], dict[str, Any]]:
     first_team = {
         'goals': [],
         'substitutions': [],
@@ -48,7 +48,14 @@ def parse_summary(teams: tuple[str, str], summary: bs4.BeautifulSoup) -> tuple[d
     }
 
     for incident in summary.find_all(class_="incident soccer"):
-        time = int(incident.find(class_="time").text.removesuffix("'"))
+        time = incident.find(class_="time")
+        if time is None:
+            # Parse extra time
+            time = incident.find(class_="time-wide").text.removesuffix("'").split('+')
+            assert len(time) == 2
+            time = int(time[0]) + int(time[1])
+        else:
+            time = int(time.text.removesuffix("'"))
         text = incident.find_all(string=True, recursive=False)[-1]
         team = TEAM_PATTERN.findall(text)
         assert team
@@ -88,7 +95,7 @@ def parse_lineup_table(table: bs4.BeautifulSoup) -> list[str]:
 
 def parse_statistics_row(row: bs4.BeautifulSoup) -> tuple[str, tuple[float, float]]:
     values = [col.text for col in row.find_next().children]
-    assert len(values) == 3    
+    assert len(values) == 3
     first_value = float(values[0].removesuffix('%'))
     name = values[1].lower().removesuffix('(xg)').strip().replace(' ', '_')
     second_value = float(values[2].removesuffix('%'))
