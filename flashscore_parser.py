@@ -1,14 +1,15 @@
 import asyncio
-import bs4
-import click
-import httpx
 import json
 import logging
 import os
-import pandas as pd
 import re
-
 from typing import Any
+
+import bs4
+import click
+import httpx
+import pandas as pd
+import pycountry
 
 logging.basicConfig(
     level=logging.INFO,
@@ -34,6 +35,10 @@ def parse_teams(soup: bs4.BeautifulSoup) -> tuple[str, str]:
 
 
 def parse_summary(teams: tuple[str, str], summary: bs4.BeautifulSoup) -> tuple[dict[str, Any], dict[str, Any]]:
+    teams_codes = (
+        pycountry.countries.search_fuzzy(teams[0])[0].alpha_3.lower(),
+        pycountry.countries.search_fuzzy(teams[1])[0].alpha_3.lower(),
+    )
     first_team = {
         'goals': [],
         'substitutions': [],
@@ -60,12 +65,12 @@ def parse_summary(teams: tuple[str, str], summary: bs4.BeautifulSoup) -> tuple[d
         team = TEAM_PATTERN.findall(text)
         assert team
         team = team[0].strip().lower()
-        if teams[0].startswith(team):
+        if teams[0].startswith(team) or teams_codes[0] == team:
             current_team = first_team
-        elif teams[1].startswith(team):
+        elif teams[1].startswith(team) or teams_codes[1] == team:
             current_team = second_team
         else:
-            raise RuntimeError(f"Team {team!r} not foung among {first_team!r} and {second_team!r}")
+            raise RuntimeError(f"Team {team!r} not foung among {teams!r} nor {teams_codes!r}")
 
         if incident.find(class_="i-field icon ball"):
             scorer = ASSISTANT_PATTERN.sub('', TEAM_PATTERN.sub('', text)).strip().lower()
