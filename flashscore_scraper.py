@@ -66,7 +66,7 @@ def parse_match(match: bs4.BeautifulSoup) -> tuple[pd.Timestamp | None, str, str
 
     href = match.find("a").get("href")
     url = urllib.parse.urlparse(href)
-    url = url._replace(netloc="m.flashscore.com", fragment='')
+    url = url._replace(netloc="www.flashscore.mobi", fragment='')
     new_href = url.geturl()
 
     return datetime, home_participant, away_participant, new_href
