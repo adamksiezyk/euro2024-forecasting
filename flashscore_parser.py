@@ -36,9 +36,12 @@ def parse_teams(soup: bs4.BeautifulSoup) -> tuple[str, str]:
 
 def parse_summary(teams: tuple[str, str], summary: bs4.BeautifulSoup) -> tuple[dict[str, Any], dict[str, Any]]:
     teams_codes = (
-        pycountry.countries.search_fuzzy(teams[0])[0].alpha_3.lower(),
-        pycountry.countries.search_fuzzy(teams[1])[0].alpha_3.lower(),
+        pycountry.countries.get(name=teams[0]),
+        pycountry.countries.get(name=teams[1]),
+        # pycountry.countries.search_fuzzy(teams[0])[0].alpha_3.lower(),
+        # pycountry.countries.search_fuzzy(teams[1])[0].alpha_3.lower(),
     )
+    teams_codes = tuple(c.alpha_3.lower() if c else None for c in teams_codes)
     first_team = {
         'goals': [],
         'substitutions': [],
