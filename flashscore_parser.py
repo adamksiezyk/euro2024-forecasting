@@ -9,6 +9,7 @@ import bs4
 import click
 import httpx
 import pandas as pd
+from pandas.core.tools.datetimes import DateParseError
 import pycountry
 
 logging.basicConfig(
@@ -122,7 +123,12 @@ async def fetch_summary(match_url: str) -> dict:
     soup = bs4.BeautifulSoup(res.text, "html.parser")
 
     teams = parse_teams(soup)
-    datetime = pd.to_datetime(soup.find_all(class_="detail")[2].text, dayfirst=True)
+    details = soup.find_all(class_="detail")
+    try:
+        datetime = pd.to_datetime(details[2].text, dayfirst=True)
+    except DateParseError:
+        # Additional info in details, parse next entry
+        datetime = pd.to_datetime(details[3].text, dayfirst=True)
     first_team, second_team = parse_summary(teams, soup)
     return {
         'teams': list(teams),
