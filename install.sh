@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-[ -d ./bin] || mkdir ./bin
+[ -d ./bin ] || mkdir ./bin
 
 # Download headless-chrome biary
 [ -d ./bin/chrome-headless-shell-linux64 ] \
